@@ -158,13 +158,16 @@
         const CTX = CANVAS.getContext("2d");
 
         // --- 2. ASSETS & HYBRID LOADER ---
+        // Added 'N' for NPC and '>' for Stairs
         const ASSETS = { 
             "@": "assets/hero.png", 
             "E": "assets/enemy.png", 
             "$": "assets/boss.png",
             ".": "assets/floor.png",
             "#": "assets/wall.png", 
-            "K": "assets/key.png"
+            "K": "assets/key.png",
+            "N": "assets/npc.png",
+            ">": "assets/stairs.png"
         };
         const IMAGES = {};
         let assetsLoaded = 0;
@@ -229,8 +232,8 @@
             { q: "To feel pain: H__T", a: "hurt", ko: "다치다", zh: "受伤害" },
             { q: "Hospital worker: N__SE", a: "nurse", ko: "간호사", zh: "护士" },
             { q: "A green plant: F__N", a: "fern", ko: "고사리", zh: "蕨类植物" },
-            { q: "Not him, but H__", a: "her", ko: "그녀를", zh: "她" },
-            { q: "First, Second, TH__D", a: "third", ko: "세 번째", zh: "第三" },
+            { q: "Not him, but H__", a: "er", ko: "그녀를", zh: "她" },
+            { q: "First, Second, TH__D", a: "ir", ko: "세 번째", zh: "第三" },
             { q: "Waves in the ocean: S__F", a: "surf", ko: "파도타기", zh: "冲浪" }
         ];
 
@@ -427,7 +430,6 @@
             CTX.translate(offsetX, offsetY);
 
             // --- INFINITE DRAW & LAYERING LOGIC ---
-            // 1. Calculate screen bounds
             let startCol = Math.floor(-offsetX / TILE_SIZE) - 1;
             let endCol = startCol + (CANVAS.width / TILE_SIZE) + 2;
             let startRow = Math.floor(-offsetY / TILE_SIZE) - 1;
@@ -439,12 +441,12 @@
                 for (let x = startCol; x <= endCol; x++) {
                     let isInsideMap = (y >= 0 && y < map.length && x >= 0 && x < map[y].length);
                     
-                    // 2. ALWAYS DRAW FLOOR FIRST (Fills gaps/background)
+                    // Always draw floor first
                     drawTile(x, y, ".", 0); 
 
                     if (isInsideMap) {
                         let char = map[y][x];
-                        // 3. IF WALL, DRAW ON TOP OF FLOOR
+                        // If wall, draw on top
                         if (char === "#") drawTile(x, y, "#", 0); 
                     }
                 }
@@ -473,25 +475,24 @@
             const cy = py + TILE_SIZE/2;
             const img = IMAGES[type];
 
-            // 1. FLOOR & WALLS (Apply 25% Crop - AGGRESSIVE)
+            // 1. FLOOR, WALLS, & STAIRS (Apply 25% Crop)
             if (img && img.complete && img.naturalHeight !== 0) {
-                if (type === "#" || type === ".") {
-                    // CROP LOGIC: Cut 25% from top/left/right/bottom to remove white border
-                    // This uses only the center 50% of the image.
-                    const cropX = img.naturalWidth * 0.30;
-                    const cropY = img.naturalHeight * 0.30;
-                    const cropW = img.naturalWidth * 0.40; 
-                    const cropH = img.naturalHeight * 0.40;
+                // We crop walls (#), floors (.), and stairs (>) to hide borders
+                if (type === "#" || type === "." || type === ">") {
+                    const cropX = img.naturalWidth * 0.25;
+                    const cropY = img.naturalHeight * 0.25;
+                    const cropW = img.naturalWidth * 0.50; 
+                    const cropH = img.naturalHeight * 0.50;
                     
                     CTX.drawImage(img, cropX, cropY, cropW, cropH, px, py - yOffset, TILE_SIZE, TILE_SIZE);
                 } else {
-                    // Characters/Items: Draw full image
+                    // Characters/NPC/Items: Draw full image
                     CTX.drawImage(img, px, py, TILE_SIZE, TILE_SIZE);
                 }
                 return; 
             }
 
-            // 2. PROCEDURAL FALLBACK 
+            // 2. PROCEDURAL FALLBACK (If image missing)
             if (type === ".") {
                  CTX.fillStyle = "#2d3436"; CTX.fillRect(px, py - yOffset, TILE_SIZE, TILE_SIZE);
             }
@@ -502,18 +503,15 @@
             else if (type === "@") { 
                 CTX.fillStyle = "#dfe6e9"; CTX.beginPath(); CTX.arc(cx, cy+5, 22, 0, Math.PI*2); CTX.fill(); 
                 CTX.fillStyle = "#ffeaa7"; CTX.beginPath(); CTX.arc(cx, cy-10, 16, 0, Math.PI*2); CTX.fill();
-                CTX.strokeStyle = "#636e72"; CTX.lineWidth = 5; CTX.lineCap = "round";
-                CTX.beginPath(); CTX.arc(cx-18, cy-10, 10, 0, Math.PI*1.5); CTX.stroke();
-                CTX.beginPath(); CTX.arc(cx+18, cy-10, 10, Math.PI*1.5, Math.PI); CTX.stroke();
-                CTX.fillStyle = "black"; CTX.fillRect(cx-6, cy-14, 4, 4); CTX.fillRect(cx+2, cy-14, 4, 4);
-                CTX.fillStyle = "#fab1a0"; CTX.fillRect(cx-3, cy-5, 6, 4);
             } 
             else if (type === "E" || type === "$") {
                 CTX.fillStyle = (type==="$") ? "#d63031" : "#e17055";
                 CTX.beginPath(); CTX.arc(cx, cy-5, 20, 0, Math.PI*2); CTX.fill();
-                CTX.fillStyle = "#2d3436"; CTX.beginPath(); CTX.arc(cx, cy-5, 20, Math.PI, 0); CTX.fill();
                 CTX.fillStyle = "white"; CTX.font = "bold 20px Arial"; CTX.fillText("R", cx, cy-12);
-                CTX.fillStyle = "black"; CTX.fillRect(cx-8, cy, 5, 5); CTX.fillRect(cx+4, cy, 5, 5);
+            }
+            else if (type === "N") { // Fallback for Owl
+                CTX.fillStyle = "#a29bfe"; CTX.beginPath(); CTX.arc(cx, cy-5, 20, 0, Math.PI*2); CTX.fill();
+                CTX.fillStyle = "white"; CTX.fillText("🦉", cx-10, cy+5);
             }
             else if (type === "K") { CTX.font = "40px Arial"; CTX.fillText("🔑", cx, cy); }
             else if (type === "D") { CTX.fillStyle = "#e67e22"; CTX.fillRect(px+10, py+10, TILE_SIZE-20, TILE_SIZE-20); CTX.fillStyle="white"; CTX.fillText("🔒", cx, cy); }
@@ -530,7 +528,10 @@
 
                 let item = items.find(i => i.x === nx && i.y === ny);
                 if (item) {
-                    if (item.type === "N") { openUI("Wizard", "Greetings!", false); } 
+                    if (item.type === "N") { 
+                        // NPC Interaction
+                        openUI("Professor Hoot", "Hoo-Hoo! Remember, 'AR' sounds like a pirate!", false); 
+                    } 
                     else if (item.type === "K") {
                         inventory.keys++; Audio.pickup(); createParticles(nx, ny, "#ffeaa7");
                         items = items.filter(i => i !== item); inventory.score+=20; player.x = nx; player.y = ny;
@@ -554,6 +555,7 @@
                         openUI(title, scaffoldText, true);
                     } 
                     else if (item.type === ">") {
+                        // Stairs Logic
                         inventory.score+=100; loadLevel(levelIdx + 1);
                     }
                 } else {
