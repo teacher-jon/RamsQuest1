@@ -478,10 +478,10 @@
                 if (type === "#" || type === ".") {
                     // CROP LOGIC: Cut 25% from top/left/right/bottom to remove white border
                     // This uses only the center 50% of the image.
-                    const cropX = img.naturalWidth * 0.25;
-                    const cropY = img.naturalHeight * 0.25;
-                    const cropW = img.naturalWidth * 0.50; 
-                    const cropH = img.naturalHeight * 0.50;
+                    const cropX = img.naturalWidth * 0.30;
+                    const cropY = img.naturalHeight * 0.30;
+                    const cropW = img.naturalWidth * 0.40; 
+                    const cropH = img.naturalHeight * 0.40;
                     
                     CTX.drawImage(img, cropX, cropY, cropW, cropH, px, py - yOffset, TILE_SIZE, TILE_SIZE);
                 } else {
