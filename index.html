@@ -143,7 +143,7 @@
         <h2 id="ui-title">Quest</h2>
         <p id="ui-text">...</p>
         <div id="battle-ui" style="display:none">
-            <input type="text" id="answer" placeholder="Type answer..." autocomplete="off">
+            <input type="text" id="answer" placeholder="Type full word..." autocomplete="off">
             <br>
             <button class="action-btn" onclick="checkAnswer()">HEADBUTT!</button>
         </div>
@@ -153,7 +153,7 @@
 
     <script>
         // --- 1. ENGINE SETUP ---
-        const TILE_SIZE = 80; // ZOOM LEVEL
+        const TILE_SIZE = 128; // ZOOM LEVEL
         const CANVAS = document.getElementById("gameCanvas");
         const CTX = CANVAS.getContext("2d");
 
@@ -179,7 +179,7 @@
             }
         }
 
-        // --- 3. GAME DATA (UFLI + MULTILINGUAL) ---
+        // --- 3. GAME DATA (UPDATED: Full Word Answers) ---
         const STORY_TEXT = [
             "Welcome, Rammy! The Bossy R Pirates have taken over the Rocky Ranges! You must climb high to save the vowels!",
             "You have reached the Echo Peaks. The wind howls with the sound of 'OR'. Find the key to the summit!",
@@ -188,60 +188,60 @@
 
         // Level 1: AR (Lesson 77)
         const LEVEL_1_QUESTIONS = [
-            { q: "A sharp fish: SH__K", a: "ark", ko: "상어", zh: "鲨鱼" },
-            { q: "Opposite of light: D__K", a: "ark", ko: "어두운", zh: "黑暗" },
-            { q: "A place to play: P__K", a: "ark", ko: "공원", zh: "公园" },
-            { q: "A twinkling light: ST__", a: "ar", ko: "별", zh: "星星" },
-            { q: "You drive this: C__", a: "ar", ko: "자동차", zh: "汽车" },
-            { q: "A farm building: B__N", a: "arn", ko: "헛간", zh: "谷仓" },
-            { q: "We paint in __T class", a: "ar", ko: "미술", zh: "艺术" },
-            { q: "Animals live on a F__M", a: "arm", ko: "농장", zh: "农场" },
-            { q: "A glass container: J__", a: "ar", ko: "병/단지", zh: "罐子" },
-            { q: "Not soft, but H__D", a: "ard", ko: "단단한", zh: "硬" },
-            { q: "To begin: ST__T", a: "art", ko: "시작하다", zh: "开始" },
+            { q: "A sharp fish: SH__K", a: "shark", ko: "상어", zh: "鲨鱼" },
+            { q: "Opposite of light: D__K", a: "dark", ko: "어두운", zh: "黑暗" },
+            { q: "A place to play: P__K", a: "park", ko: "공원", zh: "公园" },
+            { q: "A twinkling light: ST__", a: "star", ko: "별", zh: "星星" },
+            { q: "You drive this: C__", a: "car", ko: "자동차", zh: "汽车" },
+            { q: "A farm building: B__N", a: "barn", ko: "헛간", zh: "谷仓" },
+            { q: "We paint in __T class", a: "art", ko: "미술", zh: "艺术" },
+            { q: "Animals live on a F__M", a: "farm", ko: "농장", zh: "农场" },
+            { q: "A glass container: J__", a: "jar", ko: "병/단지", zh: "罐子" },
+            { q: "Not soft, but H__D", a: "hard", ko: "단단한", zh: "硬" },
+            { q: "To begin: ST__T", a: "start", ko: "시작하다", zh: "开始" },
             { q: "A body part: __M", a: "arm", ko: "팔", zh: "手臂" }
         ];
 
         // Level 2: OR/ORE (Lesson 78-79)
         const LEVEL_2_QUESTIONS = [
-            { q: "You eat with a F__K", a: "ork", ko: "포크", zh: "叉子" },
-            { q: "A yellow vegetable: C__N", a: "orn", ko: "옥수수", zh: "玉米" },
-            { q: "Bad weather: ST__M", a: "orm", ko: "폭풍", zh: "风暴" },
-            { q: "A baby is B__N", a: "orn", ko: "태어난", zh: "出生" },
-            { q: "Not long, but SH__T", a: "ort", ko: "짧은", zh: "短" },
-            { q: "Soccer is a SP__T", a: "ort", ko: "스포츠/운동", zh: "运动" },
-            { q: "We buy food at a ST__", a: "ore", ko: "가게", zh: "商店" },
-            { q: "Points in a game: SC__", a: "ore", ko: "점수", zh: "得分" },
-            { q: "Do you want M__?", a: "ore", ko: "더", zh: "更多" },
-            { q: "Sand by the sea: SH__", a: "ore", ko: "해안", zh: "海岸" },
-            { q: "Pig meat: P__K", a: "ork", ko: "돼지고기", zh: "猪肉" },
-            { q: "A sharp horn: TH__N", a: "orn", ko: "가시", zh: "刺" }
+            { q: "You eat with a F__K", a: "fork", ko: "포크", zh: "叉子" },
+            { q: "A yellow vegetable: C__N", a: "corn", ko: "옥수수", zh: "玉米" },
+            { q: "Bad weather: ST__M", a: "storm", ko: "폭풍", zh: "风暴" },
+            { q: "A baby is B__N", a: "born", ko: "태어난", zh: "出生" },
+            { q: "Not long, but SH__T", a: "short", ko: "짧은", zh: "短" },
+            { q: "Soccer is a SP__T", a: "sport", ko: "스포츠/운동", zh: "运动" },
+            { q: "We buy food at a ST__", a: "store", ko: "가게", zh: "商店" },
+            { q: "Points in a game: SC__", a: "score", ko: "점수", zh: "得分" },
+            { q: "Do you want M__?", a: "more", ko: "더", zh: "更多" },
+            { q: "Sand by the sea: SH__", a: "shore", ko: "해안", zh: "海岸" },
+            { q: "Pig meat: P__K", a: "pork", ko: "돼지고기", zh: "猪肉" },
+            { q: "A sharp horn: TH__N", a: "thorn", ko: "가시", zh: "刺" }
         ];
 
         // Level 3: ER/IR/UR (Lesson 80-81)
         const LEVEL_3_QUESTIONS = [
-            { q: "An animal that flies: B__D", a: "ird", ko: "새", zh: "鸟" },
-            { q: "A young female: G__L", a: "irl", ko: "소녀", zh: "女孩" },
-            { q: "Soil or mud: D__T", a: "irt", ko: "흙/먼지", zh: "泥土" },
-            { q: "Clothing for top: SH__T", a: "irt", ko: "셔츠", zh: "衬衫" },
-            { q: "Fire will B__N", a: "urn", ko: "타다", zh: "燃烧" },
-            { q: "Go left or right: T__N", a: "urn", ko: "돌다", zh: "转弯" },
-            { q: "To feel pain: H__T", a: "urt", ko: "다치다", zh: "受伤害" },
-            { q: "Hospital worker: N__SE", a: "ur", ko: "간호사", zh: "护士" },
-            { q: "A green plant: F__N", a: "ern", ko: "고사리", zh: "蕨类植物" },
-            { q: "Not him, but H__", a: "er", ko: "그녀를", zh: "她" },
-            { q: "First, Second, TH__D", a: "ir", ko: "세 번째", zh: "第三" },
-            { q: "Waves in the ocean: S__F", a: "ur", ko: "파도타기", zh: "冲浪" }
+            { q: "An animal that flies: B__D", a: "bird", ko: "새", zh: "鸟" },
+            { q: "A young female: G__L", a: "girl", ko: "소녀", zh: "女孩" },
+            { q: "Soil or mud: D__T", a: "dirt", ko: "흙/먼지", zh: "泥土" },
+            { q: "Clothing for top: SH__T", a: "shirt", ko: "셔츠", zh: "衬衫" },
+            { q: "Fire will B__N", a: "burn", ko: "타다", zh: "燃烧" },
+            { q: "Go left or right: T__N", a: "turn", ko: "돌다", zh: "转弯" },
+            { q: "To feel pain: H__T", a: "hurt", ko: "다치다", zh: "受伤害" },
+            { q: "Hospital worker: N__SE", a: "nurse", ko: "간호사", zh: "护士" },
+            { q: "A green plant: F__N", a: "fern", ko: "고사리", zh: "蕨类植物" },
+            { q: "Not him, but H__", a: "her", ko: "그녀를", zh: "她" },
+            { q: "First, Second, TH__D", a: "third", ko: "세 번째", zh: "第三" },
+            { q: "Waves in the ocean: S__F", a: "surf", ko: "파도타기", zh: "冲浪" }
         ];
 
         // Boss: The 'W' Rule (Lesson 82: w+or says /er/)
         const BOSS_QUESTIONS = [
-            { q: "It lives in dirt: W__M", a: "or", ko: "지렁이", zh: "蠕虫" },
-            { q: "A job or task: W__K", a: "or", ko: "일/작업", zh: "工作" },
-            { q: "The whole planet: W__LD", a: "or", ko: "세계", zh: "世界" },
-            { q: "A text unit: W__D", a: "or", ko: "단어", zh: "单词" },
-            { q: "Value of something: W__TH", a: "or", ko: "가치", zh: "价值" },
-            { q: "Bad, Worse, W__ST", a: "or", ko: "최악의", zh: "最差" }
+            { q: "It lives in dirt: W__M", a: "worm", ko: "지렁이", zh: "蠕虫" },
+            { q: "A job or task: W__K", a: "work", ko: "일/작업", zh: "工作" },
+            { q: "The whole planet: W__LD", a: "world", ko: "세계", zh: "世界" },
+            { q: "A text unit: W__D", a: "word", ko: "단어", zh: "单词" },
+            { q: "Value of something: W__TH", a: "worth", ko: "가치", zh: "价值" },
+            { q: "Bad, Worse, W__ST", a: "worst", ko: "최악의", zh: "最差" }
         ];
 
         // --- 4. GAME VARIABLES ---
@@ -473,14 +473,15 @@
             const cy = py + TILE_SIZE/2;
             const img = IMAGES[type];
 
-            // 1. FLOOR & WALLS (Apply 20% Crop)
+            // 1. FLOOR & WALLS (Apply 25% Crop - AGGRESSIVE)
             if (img && img.complete && img.naturalHeight !== 0) {
                 if (type === "#" || type === ".") {
-                    // CROP LOGIC: Cut 20% from top/left to remove white border
-                    const cropX = img.naturalWidth * 0.40;
-                    const cropY = img.naturalHeight * 0.40;
-                    const cropW = img.naturalWidth * 0.2; 
-                    const cropH = img.naturalHeight * 0.2;
+                    // CROP LOGIC: Cut 25% from top/left/right/bottom to remove white border
+                    // This uses only the center 50% of the image.
+                    const cropX = img.naturalWidth * 0.25;
+                    const cropY = img.naturalHeight * 0.25;
+                    const cropW = img.naturalWidth * 0.50; 
+                    const cropH = img.naturalHeight * 0.50;
                     
                     CTX.drawImage(img, cropX, cropY, cropW, cropH, px, py - yOffset, TILE_SIZE, TILE_SIZE);
                 } else {
