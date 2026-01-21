@@ -479,8 +479,8 @@
                     // CROP LOGIC: Cut 20% from top/left to remove white border
                     const cropX = img.naturalWidth * 0.50;
                     const cropY = img.naturalHeight * 0.50;
-                    const cropW = img.naturalWidth * 0.2; 
-                    const cropH = img.naturalHeight * 0.30;
+                    const cropW = img.naturalWidth * 0.0; 
+                    const cropH = img.naturalHeight * 0.0;
                     
                     CTX.drawImage(img, cropX, cropY, cropW, cropH, px, py - yOffset, TILE_SIZE, TILE_SIZE);
                 } else {
