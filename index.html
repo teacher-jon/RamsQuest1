@@ -153,7 +153,7 @@
 
     <script>
         // --- 1. ENGINE SETUP ---
-        const TILE_SIZE = 128; // ZOOM LEVEL
+        const TILE_SIZE = 80; // ZOOM LEVEL
         const CANVAS = document.getElementById("gameCanvas");
         const CTX = CANVAS.getContext("2d");
 
@@ -477,8 +477,8 @@
             if (img && img.complete && img.naturalHeight !== 0) {
                 if (type === "#" || type === ".") {
                     // CROP LOGIC: Cut 20% from top/left to remove white border
-                    const cropX = img.naturalWidth * 0.30;
-                    const cropY = img.naturalHeight * 0.30;
+                    const cropX = img.naturalWidth * 0.50;
+                    const cropY = img.naturalHeight * 0.50;
                     const cropW = img.naturalWidth * 0.70; 
                     const cropH = img.naturalHeight * 0.70;
                     
