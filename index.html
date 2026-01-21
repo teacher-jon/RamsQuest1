@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Rammy's Ranges: Bossy R Quest</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <style>
+        body { 
+            margin: 0; 
+            background: #222; 
+            overflow: hidden; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            color: white; 
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: none; 
+        }
+        
+        canvas { 
+            display: block; 
+            background: #111; 
+            margin: 0 auto;
+            image-rendering: pixelated; /* CRISP PIXELS */
+        }
+        
+        /* HUD */
+        #hud {
+            position: absolute; top: 15px; left: 15px;
+            background: rgba(20, 20, 30, 0.85); 
+            padding: 12px 20px; border-radius: 16px;
+            border: 2px solid rgba(255,255,255,0.2); 
+            pointer-events: none;
+            display: flex; gap: 20px; font-size: 18px; font-weight: bold;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5); z-index: 10;
+        }
+        .hud-item { display: flex; align-items: center; gap: 8px; text-shadow: 1px 1px 0 #000; }
+        .hud-value { color: #55efc4; }
+
+        /* START SCREEN */
+        #start-screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(10, 10, 15, 0.98); z-index: 200;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            text-align: center;
+        }
+        #start-btn {
+            padding: 20px 60px; font-size: 24px; font-weight: bold; 
+            background: linear-gradient(45deg, #6c5ce7, #a29bfe); 
+            color: white; border: none; border-radius: 50px;
+            cursor: pointer; box-shadow: 0 0 30px rgba(108, 92, 231, 0.5);
+            transition: transform 0.2s;
+        }
+        #start-btn:hover { transform: scale(1.05); }
+
+        /* UI POPUP */
+        #ui-layer {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: rgba(15, 15, 20, 0.98); 
+            color: #eee; 
+            padding: 40px; 
+            border: 4px solid #6c5ce7;
+            border-radius: 20px;
+            text-align: center; 
+            display: none; 
+            width: 85%; max-width: 500px;
+            box-shadow: 0 0 100px rgba(108, 92, 231, 0.6);
+            z-index: 100;
+        }
+
+        h2#ui-title { margin-top: 0; color: #a29bfe; text-transform: uppercase; letter-spacing: 4px; border-bottom: 2px solid #444; padding-bottom: 20px; font-size: 24px;}
+        
+        /* Updated text style for Bilingual Support */
+        p#ui-text { 
+            font-size: 24px; 
+            line-height: 1.6; 
+            margin: 30px 0; 
+            color: #fff; 
+            white-space: pre-wrap; /* Allows new lines for Korean/Mandarin */
+        }
+
+        input { 
+            padding: 15px; font-size: 24px; text-align: center; width: 80%; margin-top: 15px;
+            background: #2d3436; border: 3px solid #636e72; color: white; border-radius: 12px; outline: none;
+        }
+        input:focus { border-color: #a29bfe; }
+        
+        button.action-btn { 
+            padding: 15px 40px; font-size: 20px; cursor: pointer; margin-top: 30px;
+            background: #6c5ce7; color: white; border: none; border-radius: 12px; font-weight: bold;
+            width: 100%; transition: background 0.2s;
+        }
+        button.action-btn:hover { background: #81ecec; color: #2d3436; }
+
+        /* CONTROLS */
+        #mobile-controls {
+            position: absolute; bottom: 30px; left: 30px;
+            display: grid; 
+            grid-template-columns: 80px 80px 80px;
+            grid-template-rows: 80px 80px;
+            gap: 10px; z-index: 50;
+        }
+        .dpad-btn {
+            width: 80px; height: 80px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.4);
+            border-radius: 50%;
+            color: white; font-size: 30px;
+            display: flex; justify-content: center; align-items: center;
+            cursor: pointer;
+        }
+        .dpad-btn:active { background: rgba(108, 92, 231, 0.8); }
+        #btn-up { grid-column: 2; grid-row: 1; }
+        #btn-left { grid-column: 1; grid-row: 2; }
+        #btn-down { grid-column: 2; grid-row: 2; }
+        #btn-right { grid-column: 3; grid-row: 2; }
+    </style>
+</head>
+<body>
+
+    <div id="start-screen">
+        <h1 style="font-size: 60px; color: #a29bfe; margin-bottom: 20px;">RAMMY'S RANGES</h1>
+        <p style="color:#ccc; margin-bottom: 50px; font-size: 20px;">Quest for the Bossy R</p>
+        <button id="start-btn" onclick="initGame()">START ADVENTURE</button>
+    </div>
+    
+    <div id="hud">
+        <div class="hud-item">🏆 <span id="score-val" class="hud-value">0</span></div>
+        <div class="hud-item">🔑 <span id="key-count" class="hud-value">0</span></div>
+        <div class="hud-item">🧪 <span id="potion-status" class="hud-value">OFF</span></div>
+        <div class="hud-item" style="border-left: 2px solid #555; padding-left: 15px;">
+            <span id="rank-display" style="color:#ffeaa7">NOVICE</span>
+        </div>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <div id="mobile-controls">
+        <div class="dpad-btn" id="btn-up" onpointerdown="handleInput(0, -1)">▲</div>
+        <div class="dpad-btn" id="btn-left" onpointerdown="handleInput(-1, 0)">◀</div>
+        <div class="dpad-btn" id="btn-down" onpointerdown="handleInput(0, 1)">▼</div>
+        <div class="dpad-btn" id="btn-right" onpointerdown="handleInput(1, 0)">▶</div>
+    </div>
+
+    <div id="ui-layer">
+        <h2 id="ui-title">Quest</h2>
+        <p id="ui-text">...</p>
+        <div id="battle-ui" style="display:none">
+            <input type="text" id="answer" placeholder="Type answer..." autocomplete="off">
+            <br>
+            <button class="action-btn" onclick="checkAnswer()">HEADBUTT!</button>
+        </div>
+        <button id="close-btn" class="action-btn" onclick="closeUI()" style="display:none">CONTINUE</button>
+        <p id="feedback" style="color:#ff7675; font-weight:bold; min-height: 20px; margin-top:15px;"></p>
+    </div>
+
+    <script>
+        // --- 1. ENGINE SETUP ---
+        const TILE_SIZE = 80; 
+        const CANVAS = document.getElementById("gameCanvas");
+        const CTX = CANVAS.getContext("2d");
+
+        // --- 2. ASSETS & HYBRID LOADER ---
+        // Maps map characters to image files in the 'assets' folder
+        const ASSETS = { 
+            "@": "assets/hero.png", 
+            "E": "assets/enemy.png", 
+            "$": "assets/boss.png",
+            ".": "assets/floor.png",
+            "#": "assets/wall.png", 
+            "K": "assets/key.png"
+        };
+        const IMAGES = {};
+        let assetsLoaded = 0;
+
+        function preloadImages() {
+            for (let key in ASSETS) {
+                const img = new Image();
+                img.src = ASSETS[key];
+                img.onload = () => { assetsLoaded++; };
+                img.onerror = () => { assetsLoaded++; }; 
+                IMAGES[key] = img;
+            }
+        }
+
+        // --- 3. GAME DATA (UFLI + MULTILINGUAL) ---
+        const STORY_TEXT = [
+            "Welcome, Rammy! The Bossy R Pirates have taken over the Rocky Ranges! You must climb high to save the vowels!",
+            "You have reached the Echo Peaks. The wind howls with the sound of 'OR'. Find the key to the summit!",
+            "The Summit of Spells. Captain Bossy R waits at the top. Use your head(butt) to defeat him!"
+        ];
+
+        // Level 1: AR (Lesson 77)
+        const LEVEL_1_QUESTIONS = [
+            { q: "A sharp fish: SH__K", a: "ark", ko: "상어", zh: "鲨鱼" },
+            { q: "Opposite of light: D__K", a: "ark", ko: "어두운", zh: "黑暗" },
+            { q: "A place to play: P__K", a: "ark", ko: "공원", zh: "公园" },
+            { q: "A twinkling light: ST__", a: "ar", ko: "별", zh: "星星" },
+            { q: "You drive this: C__", a: "ar", ko: "자동차", zh: "汽车" },
+            { q: "A farm building: B__N", a: "arn", ko: "헛간", zh: "谷仓" },
+            { q: "We paint in __T class", a: "ar", ko: "미술", zh: "艺术" },
+            { q: "Animals live on a F__M", a: "arm", ko: "농장", zh: "农场" },
+            { q: "A glass container: J__", a: "ar", ko: "병/단지", zh: "罐子" },
+            { q: "Not soft, but H__D", a: "ard", ko: "단단한", zh: "硬" },
+            { q: "To begin: ST__T", a: "art", ko: "시작하다", zh: "开始" },
+            { q: "A body part: __M", a: "arm", ko: "팔", zh: "手臂" }
+        ];
+
+        // Level 2: OR/ORE (Lesson 78-79)
+        const LEVEL_2_QUESTIONS = [
+            { q: "You eat with a F__K", a: "ork", ko: "포크", zh: "叉子" },
+            { q: "A yellow vegetable: C__N", a: "orn", ko: "옥수수", zh: "玉米" },
+            { q: "Bad weather: ST__M", a: "orm", ko: "폭풍", zh: "风暴" },
+            { q: "A baby is B__N", a: "orn", ko: "태어난", zh: "出生" },
+            { q: "Not long, but SH__T", a: "ort", ko: "짧은", zh: "短" },
+            { q: "Soccer is a SP__T", a: "ort", ko: "스포츠/운동", zh: "运动" },
+            { q: "We buy food at a ST__", a: "ore", ko: "가게", zh: "商店" },
+            { q: "Points in a game: SC__", a: "ore", ko: "점수", zh: "得分" },
+            { q: "Do you want M__?", a: "ore", ko: "더", zh: "更多" },
+            { q: "Sand by the sea: SH__", a: "ore", ko: "해안", zh: "海岸" },
+            { q: "Pig meat: P__K", a: "ork", ko: "돼지고기", zh: "猪肉" },
+            { q: "A sharp horn: TH__N", a: "orn", ko: "가시", zh: "刺" }
+        ];
+
+        // Level 3: ER/IR/UR (Lesson 80-81)
+        const LEVEL_3_QUESTIONS = [
+            { q: "An animal that flies: B__D", a: "ird", ko: "새", zh: "鸟" },
+            { q: "A young female: G__L", a: "irl", ko: "소녀", zh: "女孩" },
+            { q: "Soil or mud: D__T", a: "irt", ko: "흙/먼지", zh: "泥土" },
+            { q: "Clothing for top: SH__T", a: "irt", ko: "셔츠", zh: "衬衫" },
+            { q: "Fire will B__N", a: "urn", ko: "타다", zh: "燃烧" },
+            { q: "Go left or right: T__N", a: "urn", ko: "돌다", zh: "转弯" },
+            { q: "To feel pain: H__T", a: "urt", ko: "다치다", zh: "受伤害" },
+            { q: "Hospital worker: N__SE", a: "ur", ko: "간호사", zh: "护士" },
+            { q: "A green plant: F__N", a: "ern", ko: "고사리", zh: "蕨类植物" },
+            { q: "Not him, but H__", a: "er", ko: "그녀를", zh: "她" },
+            { q: "First, Second, TH__D", a: "ir", ko: "세 번째", zh: "第三" },
+            { q: "Waves in the ocean: S__F", a: "ur", ko: "파도타기", zh: "冲浪" }
+        ];
+
+        // Boss: The 'W' Rule (Lesson 82: w+or says /er/)
+        const BOSS_QUESTIONS = [
+            { q: "It lives in dirt: W__M", a: "or", ko: "지렁이", zh: "蠕虫" },
+            { q: "A job or task: W__K", a: "or", ko: "일/작업", zh: "工作" },
+            { q: "The whole planet: W__LD", a: "or", ko: "세계", zh: "世界" },
+            { q: "A text unit: W__D", a: "or", ko: "단어", zh: "单词" },
+            { q: "Value of something: W__TH", a: "or", ko: "가치", zh: "价值" },
+            { q: "Bad, Worse, W__ST", a: "or", ko: "최악의", zh: "最差" }
+        ];
+
+        // --- 4. GAME VARIABLES ---
+        let player = { x: 1, y: 1 };
+        let inventory = { keys: 0, vision: false, score: 0 };
+        let levelIdx = 0;
+        let isPaused = false;
+        let currentEnemy = null;
+        let walls = [];
+        let items = [];
+        let particles = [];
+        let moveTimer = 0;
+        let shake = 0;
+
+        // --- MAPS ---
+        const LEVELS = [
+            [ "####################", "#@.......E....K....#", "#.N...H............#", "#######D############", "#...........E......#", "#...P.......#......#", "#...#.......E......#", "#...#...E....>.....#", "#...#..............#", "####################" ],
+            [ "#######################", "#@........#...........#", "#.........#...........#", "#...E.....#.....E.....#", "#.........D...........#", "#...K.....#...........#", "#.........#......>....#", "#.........#...........#", "#######################" ],
+            [ "#######################", "#@.................K..#", "#..#################..#", "#..#...............#..#", "#..#...E...$.......#..#", "#..#...............#..#", "#..#######...#######..#", "#..........D..........#", "#######################" ]
+        ];
+
+        // --- 5. AUDIO SYSTEM ---
+        const Audio = {
+            ctx: null, active: false,
+            init: function() {
+                try {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    this.ctx = new AudioContext();
+                    this.active = true;
+                    this.startBGM();
+                } catch (e) { this.active = false; }
+            },
+            playTone: function(freq, type, duration, vol=0.1) {
+                if (!this.active || !this.ctx) return;
+                try {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = type; osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                    gain.gain.setValueAtTime(vol, this.ctx.currentTime); 
+                    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+                    osc.connect(gain); gain.connect(this.ctx.destination);
+                    osc.start(); osc.stop(this.ctx.currentTime + duration);
+                } catch(e) {}
+            },
+            pickup: () => Audio.playTone(800, 'sine', 0.2),
+            unlock: () => Audio.playTone(300, 'square', 0.3),
+            magic: () => Audio.playTone(600, 'sine', 0.4),
+            error: () => Audio.playTone(100, 'sawtooth', 0.3),
+            step: () => Audio.playTone(50, 'triangle', 0.05, 0.02),
+            levelup: () => { [440, 554, 659, 880].forEach((n, i) => setTimeout(() => Audio.playTone(n, 'square', 0.4), i * 100)); },
+            startBGM: function() {
+                if (!this.active || !this.ctx) return;
+                try {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.frequency.value = 50; osc.type = 'triangle';
+                    gain.gain.value = 0.05; 
+                    osc.connect(gain); gain.connect(this.ctx.destination);
+                    osc.start();
+                } catch(e) {}
+            }
+        };
+
+        // --- 6. PARTICLES ---
+        function createParticles(x, y, color, count=10) {
+            for(let i=0; i<count; i++) {
+                particles.push({
+                    x: x * TILE_SIZE + TILE_SIZE/2,
+                    y: y * TILE_SIZE + TILE_SIZE/2,
+                    vx: (Math.random() - 0.5) * 12,
+                    vy: (Math.random() - 0.5) * 12,
+                    life: 1.0, color: color
+                });
+            }
+        }
+        function updateParticles() {
+            particles.forEach(p => { p.x += p.vx; p.y += p.vy; p.life -= 0.05; });
+            particles = particles.filter(p => p.life > 0);
+        }
+        function drawParticles(ctx, offsetX, offsetY) {
+            particles.forEach(p => {
+                ctx.globalAlpha = p.life; ctx.fillStyle = p.color;
+                ctx.fillRect(p.x + offsetX, p.y + offsetY, 6, 6);
+                ctx.globalAlpha = 1.0;
+            });
+        }
+
+        // --- 7. CORE FUNCTIONS ---
+        function initGame() {
+            document.getElementById("start-screen").style.display = "none";
+            Audio.init();
+            resize();
+            preloadImages();
+            loadLevel(0);
+            requestAnimationFrame(gameLoop);
+        }
+
+        function loadLevel(idx) {
+            levelIdx = idx;
+            if (levelIdx >= LEVELS.length) {
+                Audio.levelup();
+                alert(`YOU WIN! Final Score: ${inventory.score}`);
+                location.reload(); 
+                return;
+            }
+            if (idx > 0) Audio.levelup();
+
+            const map = LEVELS[levelIdx];
+            walls = [];
+            items = [];
+            
+            // Select Question Pool based on Level
+            let pool;
+            if (idx === 0) pool = LEVEL_1_QUESTIONS;
+            else if (idx === 1) pool = LEVEL_2_QUESTIONS;
+            else pool = LEVEL_3_QUESTIONS;
+
+            for (let y = 0; y < map.length; y++) {
+                for (let x = 0; x < map[y].length; x++) {
+                    let char = map[y][x];
+                    if (char === "#") walls.push({x, y});
+                    else if (char === "@") { player.x = x; player.y = y; }
+                    else if (char === "E" || char === "$" || char === "H") {
+                        let qData = (char === "$") ? BOSS_QUESTIONS[Math.floor(Math.random()*BOSS_QUESTIONS.length)] : pool[Math.floor(Math.random() * pool.length)];
+                        items.push({ x, y, type: char, quest: qData, id: Math.random(), isMoving: (char === "E") });
+                    } 
+                    else if ("KDP>NS".includes(char)) items.push({ x, y, type: char, id: Math.random() });
+                }
+            }
+            updateHUD();
+            setTimeout(() => openUI("Level " + (idx+1), STORY_TEXT[idx], false), 500);
+        }
+
+        function updateHUD() {
+            document.getElementById("key-count").innerText = inventory.keys;
+            document.getElementById("score-val").innerText = inventory.score;
+            document.getElementById("potion-status").innerText = inventory.vision ? "ON" : "OFF";
+            document.getElementById("potion-status").style.color = inventory.vision ? "#55efc4" : "#636e72";
+            
+            let ranks = [{s:0, t:"NOVICE"}, {s:200, t:"CLIMBER"}, {s:500, t:"RANGER"}, {s:800, t:"LEGEND"}];
+            let currentRank = "NOVICE";
+            for(let r of ranks) if(inventory.score >= r.s) currentRank = r.t;
+            document.getElementById("rank-display").innerText = currentRank;
+        }
+
+        function gameLoop() {
+            if(!isPaused) { updateEnemies(); updateParticles(); draw(); }
+            if(shake > 0) shake--;
+            requestAnimationFrame(gameLoop);
+        }
+
+        function updateEnemies() {
+            moveTimer++;
+            if (moveTimer > 60) { 
+                moveTimer = 0;
+                items.forEach(item => {
+                    if (item.isMoving) {
+                        let dirs = [[0,1], [0,-1], [1,0], [-1,0]];
+                        let move = dirs[Math.floor(Math.random() * dirs.length)];
+                        let nx = item.x + move[0];
+                        let ny = item.y + move[1];
+                        if (!isWall(nx, ny) && !(player.x === nx && player.y === ny) && !items.some(i => i.x === nx && i.y === ny)) {
+                            item.x = nx;
+                            item.y = ny;
+                        }
+                    }
+                });
+            }
+        }
+
+        function isWall(x, y) { return walls.some(w => w.x === x && w.y === y); }
+
+        function draw() {
+            let shakeX = shake > 0 ? (Math.random() - 0.5) * 10 : 0;
+            let shakeY = shake > 0 ? (Math.random() - 0.5) * 10 : 0;
+
+            CTX.fillStyle = "#111"; 
+            CTX.fillRect(0, 0, CANVAS.width, CANVAS.height);
+            let offsetX = (CANVAS.width / 2) - (player.x * TILE_SIZE) - (TILE_SIZE / 2) + shakeX;
+            let offsetY = (CANVAS.height / 2) - (player.y * TILE_SIZE) - (TILE_SIZE / 2) + shakeY;
+            
+            CTX.save();
+            CTX.translate(offsetX, offsetY);
+
+            // Draw Map Base (for rendering background logic)
+            const map = LEVELS[levelIdx];
+            for (let y = 0; y < map.length; y++) {
+                for (let x = 0; x < map[y].length; x++) {
+                    let char = map[y][x];
+                    if (char === "#") drawTile(x, y, "#", 0); 
+                    else drawTile(x, y, ".", 0); 
+                }
+            }
+
+            const bob = Math.sin(Date.now() / 200) * 5;
+            items.forEach(item => {
+                if (item.type === "H" && !inventory.vision) { /* Invisible */ } 
+                else {
+                    let yOffset = (item.type === "E" || item.type === "N" || item.type === "$") ? bob : 0;
+                    drawTile(item.x, item.y, item.type, yOffset);
+                }
+            });
+
+            drawTile(player.x, player.y, "@", bob);
+            drawParticles(CTX, 0, 0); 
+
+            CTX.restore();
+        }
+
+        // --- 8. HYBRID DRAWING SYSTEM ---
+        function drawTile(x, y, type, yOffset) {
+            const px = x * TILE_SIZE;
+            const py = (y * TILE_SIZE) + yOffset;
+            const cx = px + TILE_SIZE/2;
+            const cy = py + TILE_SIZE/2;
+            const img = IMAGES[type];
+
+            // 1. FLOOR (If sprite exists, use it, else procedural color)
+            if (IMAGES["."] && IMAGES["."].complete && IMAGES["."].naturalHeight !== 0 && type !== "#") {
+                 CTX.drawImage(IMAGES["."], px, py - yOffset, TILE_SIZE, TILE_SIZE);
+            } else if (type !== "#") {
+                 CTX.fillStyle = "#2d3436"; // Fallback floor
+                 CTX.fillRect(px, py - yOffset, TILE_SIZE, TILE_SIZE);
+            }
+
+            // 2. CHECK IF ENTITY SPRITE EXISTS & LOADED
+            if (img && img.complete && img.naturalHeight !== 0) {
+                CTX.drawImage(img, px, py, TILE_SIZE, TILE_SIZE);
+            } else {
+                // --- FALLBACK: PROCEDURAL DRAWING ---
+                if (type === "#") { 
+                    CTX.fillStyle = "#636e72"; CTX.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+                    CTX.strokeStyle = "#2d3436"; CTX.lineWidth=4; CTX.strokeRect(px,py,TILE_SIZE,TILE_SIZE);
+                } 
+                else if (type === "@") { 
+                    // RAMMY (Procedural Fallback)
+                    CTX.fillStyle = "#dfe6e9"; CTX.beginPath(); CTX.arc(cx, cy+5, 22, 0, Math.PI*2); CTX.fill(); 
+                    CTX.fillStyle = "#ffeaa7"; CTX.beginPath(); CTX.arc(cx, cy-10, 16, 0, Math.PI*2); CTX.fill();
+                    CTX.strokeStyle = "#636e72"; CTX.lineWidth = 5; CTX.lineCap = "round";
+                    CTX.beginPath(); CTX.arc(cx-18, cy-10, 10, 0, Math.PI*1.5); CTX.stroke();
+                    CTX.beginPath(); CTX.arc(cx+18, cy-10, 10, Math.PI*1.5, Math.PI); CTX.stroke();
+                    CTX.fillStyle = "black"; CTX.fillRect(cx-6, cy-14, 4, 4); CTX.fillRect(cx+2, cy-14, 4, 4);
+                    CTX.fillStyle = "#fab1a0"; CTX.fillRect(cx-3, cy-5, 6, 4);
+                } 
+                else if (type === "E" || type === "$") {
+                    // PIRATE R (Procedural Fallback)
+                    CTX.fillStyle = (type==="$") ? "#d63031" : "#e17055";
+                    CTX.beginPath(); CTX.arc(cx, cy-5, 20, 0, Math.PI*2); CTX.fill();
+                    CTX.fillStyle = "#2d3436"; CTX.beginPath(); CTX.arc(cx, cy-5, 20, Math.PI, 0); CTX.fill(); // Bandana
+                    CTX.fillStyle = "white"; CTX.font = "bold 20px Arial"; CTX.fillText("R", cx, cy-12);
+                    CTX.fillStyle = "black"; CTX.fillRect(cx-8, cy, 5, 5); CTX.fillRect(cx+4, cy, 5, 5);
+                }
+                else if (type === "K") { CTX.font = "40px Arial"; CTX.fillText("🔑", cx, cy); }
+                else if (type === "D") { CTX.fillStyle = "#e67e22"; CTX.fillRect(px+10, py+10, TILE_SIZE-20, TILE_SIZE-20); CTX.fillStyle="white"; CTX.fillText("🔒", cx, cy); }
+                else if (type === ">") { CTX.font = "40px Arial"; CTX.fillText("🏔️", cx, cy); }
+            }
+        }
+
+        // --- 9. INPUT & UI ---
+        function handleInput(dx, dy) {
+            if (isPaused) return;
+            if (dx !== 0 || dy !== 0) {
+                let nx = player.x + dx;
+                let ny = player.y + dy;
+                if (isWall(nx, ny)) { Audio.error(); shake = 5; return; }
+
+                let item = items.find(i => i.x === nx && i.y === ny);
+                if (item) {
+                    if (item.type === "N") { openUI("Wizard", "Greetings!", false); } 
+                    else if (item.type === "K") {
+                        inventory.keys++; Audio.pickup(); createParticles(nx, ny, "#ffeaa7");
+                        items = items.filter(i => i !== item); inventory.score+=20; player.x = nx; player.y = ny;
+                    }
+                    else if (item.type === "P") {
+                        inventory.vision = true; updateHUD(); Audio.pickup(); createParticles(nx, ny, "#55efc4");
+                        openUI("Potion", "Hidden traps revealed!", false); items = items.filter(i => i !== item); inventory.score+=20; player.x = nx; player.y = ny;
+                    }
+                    else if (item.type === "D") {
+                        if (inventory.keys > 0) {
+                            inventory.keys--; Audio.unlock(); createParticles(nx, ny, "#e67e22");
+                            items = items.filter(i => i !== item); openUI("Unlocked!", "Path cleared.", false); updateHUD();
+                        } else {
+                            openUI("Locked", "You need a key 🔑.", false);
+                        }
+                    }
+                    else if (item.type === "E" || item.type === "H" || item.type === "$") {
+                        currentEnemy = item; 
+                        // Dual Language Scaffold
+                        let scaffoldText = item.quest.q + "\n\n" + "🇰🇷 " + item.quest.ko + "  |  🇨🇳 " + item.quest.zh;
+                        let title = (item.type === "$") ? "BOSS BATTLE" : "BATTLE";
+                        openUI(title, scaffoldText, true);
+                    } 
+                    else if (item.type === ">") {
+                        inventory.score+=100; loadLevel(levelIdx + 1);
+                    }
+                } else {
+                    player.x = nx; player.y = ny;
+                    Audio.step();
+                }
+                updateHUD();
+            }
+        }
+
+        window.addEventListener("keydown", (e) => {
+            let dx = 0, dy = 0;
+            if (e.key === "ArrowLeft") dx = -1;
+            if (e.key === "ArrowRight") dx = 1;
+            if (e.key === "ArrowUp") dy = -1;
+            if (e.key === "ArrowDown") dy = 1;
+            handleInput(dx, dy);
+        });
+
+        const UI = document.getElementById("ui-layer");
+        const INPUT = document.getElementById("answer");
+
+        function openUI(title, text, isBattle) {
+            isPaused = true;
+            UI.style.display = "block";
+            document.getElementById("ui-title").innerText = title;
+            document.getElementById("ui-text").innerText = text;
+            document.getElementById("feedback").innerText = "";
+            INPUT.value = "";
+            if (isBattle) {
+                document.getElementById("battle-ui").style.display = "block";
+                document.getElementById("close-btn").style.display = "none";
+                setTimeout(() => INPUT.focus(), 100);
+            } else {
+                document.getElementById("battle-ui").style.display = "none";
+                document.getElementById("close-btn").style.display = "inline-block";
+            }
+        }
+
+        function closeUI() { UI.style.display = "none"; isPaused = false; }
+
+        window.checkAnswer = function() {
+            if (!currentEnemy) return;
+            const attempt = INPUT.value.toLowerCase().trim();
+            const correct = currentEnemy.quest.a.toLowerCase().trim();
+            if (attempt === correct) {
+                Audio.magic();
+                createParticles(currentEnemy.x, currentEnemy.y, "#a29bfe", 20);
+                if (currentEnemy.type === "$") {
+                    items = items.filter(i => i !== currentEnemy);
+                    inventory.score+=500;
+                    closeUI();
+                    setTimeout(() => { alert("BOSS DEFEATED! YOU WIN!"); location.reload(); }, 500);
+                    return;
+                }
+                items = items.filter(i => i !== currentEnemy);
+                inventory.score+=50;
+                closeUI();
+                updateHUD();
+            } else {
+                Audio.error();
+                shake = 5;
+                document.getElementById("feedback").innerText = "WRONG! Try again.";
+            }
+        }
+
+        INPUT.addEventListener("keypress", (e) => { if (e.key === "Enter") checkAnswer(); });
+        
+        function resize() { 
+            CANVAS.width = window.innerWidth; 
+            CANVAS.height = window.innerHeight; 
+            CTX.imageSmoothingEnabled = false; 
+            draw(); 
+        }
+        window.addEventListener('resize', resize);
+        window.closeUI = closeUI;
+
+    </script>
+</body>
+</html>
