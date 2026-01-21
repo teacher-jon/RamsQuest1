@@ -6,7 +6,7 @@
     <style>
         body { 
             margin: 0; 
-            background: #222; 
+            background: #111; 
             overflow: hidden; 
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
             color: white; 
@@ -68,13 +68,12 @@
 
         h2#ui-title { margin-top: 0; color: #a29bfe; text-transform: uppercase; letter-spacing: 4px; border-bottom: 2px solid #444; padding-bottom: 20px; font-size: 24px;}
         
-        /* Updated text style for Bilingual Support */
         p#ui-text { 
             font-size: 24px; 
             line-height: 1.6; 
             margin: 30px 0; 
             color: #fff; 
-            white-space: pre-wrap; /* Allows new lines for Korean/Mandarin */
+            white-space: pre-wrap; 
         }
 
         input { 
@@ -154,12 +153,11 @@
 
     <script>
         // --- 1. ENGINE SETUP ---
-        const TILE_SIZE = 250; 
+        const TILE_SIZE = 128; // ZOOM LEVEL
         const CANVAS = document.getElementById("gameCanvas");
         const CTX = CANVAS.getContext("2d");
 
         // --- 2. ASSETS & HYBRID LOADER ---
-        // Maps map characters to image files in the 'assets' folder
         const ASSETS = { 
             "@": "assets/hero.png", 
             "E": "assets/enemy.png", 
@@ -355,7 +353,6 @@
             walls = [];
             items = [];
             
-            // Select Question Pool based on Level
             let pool;
             if (idx === 0) pool = LEVEL_1_QUESTIONS;
             else if (idx === 1) pool = LEVEL_2_QUESTIONS;
@@ -420,24 +417,40 @@
             let shakeX = shake > 0 ? (Math.random() - 0.5) * 10 : 0;
             let shakeY = shake > 0 ? (Math.random() - 0.5) * 10 : 0;
 
-            CTX.fillStyle = "#111"; 
-            CTX.fillRect(0, 0, CANVAS.width, CANVAS.height);
             let offsetX = (CANVAS.width / 2) - (player.x * TILE_SIZE) - (TILE_SIZE / 2) + shakeX;
             let offsetY = (CANVAS.height / 2) - (player.y * TILE_SIZE) - (TILE_SIZE / 2) + shakeY;
+
+            CTX.fillStyle = "#111"; 
+            CTX.fillRect(0, 0, CANVAS.width, CANVAS.height);
             
             CTX.save();
             CTX.translate(offsetX, offsetY);
 
-            // Draw Map Base (for rendering background logic)
+            // --- INFINITE DRAW & LAYERING LOGIC ---
+            // 1. Calculate screen bounds
+            let startCol = Math.floor(-offsetX / TILE_SIZE) - 1;
+            let endCol = startCol + (CANVAS.width / TILE_SIZE) + 2;
+            let startRow = Math.floor(-offsetY / TILE_SIZE) - 1;
+            let endRow = startRow + (CANVAS.height / TILE_SIZE) + 2;
+
             const map = LEVELS[levelIdx];
-            for (let y = 0; y < map.length; y++) {
-                for (let x = 0; x < map[y].length; x++) {
-                    let char = map[y][x];
-                    if (char === "#") drawTile(x, y, "#", 0); 
-                    else drawTile(x, y, ".", 0); 
+
+            for (let y = startRow; y <= endRow; y++) {
+                for (let x = startCol; x <= endCol; x++) {
+                    let isInsideMap = (y >= 0 && y < map.length && x >= 0 && x < map[y].length);
+                    
+                    // 2. ALWAYS DRAW FLOOR FIRST (Fills gaps/background)
+                    drawTile(x, y, ".", 0); 
+
+                    if (isInsideMap) {
+                        let char = map[y][x];
+                        // 3. IF WALL, DRAW ON TOP OF FLOOR
+                        if (char === "#") drawTile(x, y, "#", 0); 
+                    }
                 }
             }
 
+            // --- DRAW ITEMS & PLAYER ---
             const bob = Math.sin(Date.now() / 200) * 5;
             items.forEach(item => {
                 if (item.type === "H" && !inventory.vision) { /* Invisible */ } 
@@ -453,7 +466,6 @@
             CTX.restore();
         }
 
-        // --- 8. HYBRID DRAWING SYSTEM ---
         function drawTile(x, y, type, yOffset) {
             const px = x * TILE_SIZE;
             const py = (y * TILE_SIZE) + yOffset;
@@ -461,45 +473,50 @@
             const cy = py + TILE_SIZE/2;
             const img = IMAGES[type];
 
-            // 1. FLOOR (If sprite exists, use it, else procedural color)
-            if (IMAGES["."] && IMAGES["."].complete && IMAGES["."].naturalHeight !== 0 && type !== "#") {
-                 CTX.drawImage(IMAGES["."], px, py - yOffset, TILE_SIZE, TILE_SIZE);
-            } else if (type !== "#") {
-                 CTX.fillStyle = "#2d3436"; // Fallback floor
-                 CTX.fillRect(px, py - yOffset, TILE_SIZE, TILE_SIZE);
+            // 1. FLOOR & WALLS (Apply 20% Crop)
+            if (img && img.complete && img.naturalHeight !== 0) {
+                if (type === "#" || type === ".") {
+                    // CROP LOGIC: Cut 20% from top/left to remove white border
+                    const cropX = img.naturalWidth * 0.30;
+                    const cropY = img.naturalHeight * 0.30;
+                    const cropW = img.naturalWidth * 0.70; 
+                    const cropH = img.naturalHeight * 0.70;
+                    
+                    CTX.drawImage(img, cropX, cropY, cropW, cropH, px, py - yOffset, TILE_SIZE, TILE_SIZE);
+                } else {
+                    // Characters/Items: Draw full image
+                    CTX.drawImage(img, px, py, TILE_SIZE, TILE_SIZE);
+                }
+                return; 
             }
 
-            // 2. CHECK IF ENTITY SPRITE EXISTS & LOADED
-            if (img && img.complete && img.naturalHeight !== 0) {
-                CTX.drawImage(img, px, py, TILE_SIZE, TILE_SIZE);
-            } else {
-                // --- FALLBACK: PROCEDURAL DRAWING ---
-                if (type === "#") { 
-                    CTX.fillStyle = "#636e72"; CTX.fillRect(px, py, TILE_SIZE, TILE_SIZE);
-                    CTX.strokeStyle = "#2d3436"; CTX.lineWidth=4; CTX.strokeRect(px,py,TILE_SIZE,TILE_SIZE);
-                } 
-                else if (type === "@") { 
-                    // RAMMY (Procedural Fallback)
-                    CTX.fillStyle = "#dfe6e9"; CTX.beginPath(); CTX.arc(cx, cy+5, 22, 0, Math.PI*2); CTX.fill(); 
-                    CTX.fillStyle = "#ffeaa7"; CTX.beginPath(); CTX.arc(cx, cy-10, 16, 0, Math.PI*2); CTX.fill();
-                    CTX.strokeStyle = "#636e72"; CTX.lineWidth = 5; CTX.lineCap = "round";
-                    CTX.beginPath(); CTX.arc(cx-18, cy-10, 10, 0, Math.PI*1.5); CTX.stroke();
-                    CTX.beginPath(); CTX.arc(cx+18, cy-10, 10, Math.PI*1.5, Math.PI); CTX.stroke();
-                    CTX.fillStyle = "black"; CTX.fillRect(cx-6, cy-14, 4, 4); CTX.fillRect(cx+2, cy-14, 4, 4);
-                    CTX.fillStyle = "#fab1a0"; CTX.fillRect(cx-3, cy-5, 6, 4);
-                } 
-                else if (type === "E" || type === "$") {
-                    // PIRATE R (Procedural Fallback)
-                    CTX.fillStyle = (type==="$") ? "#d63031" : "#e17055";
-                    CTX.beginPath(); CTX.arc(cx, cy-5, 20, 0, Math.PI*2); CTX.fill();
-                    CTX.fillStyle = "#2d3436"; CTX.beginPath(); CTX.arc(cx, cy-5, 20, Math.PI, 0); CTX.fill(); // Bandana
-                    CTX.fillStyle = "white"; CTX.font = "bold 20px Arial"; CTX.fillText("R", cx, cy-12);
-                    CTX.fillStyle = "black"; CTX.fillRect(cx-8, cy, 5, 5); CTX.fillRect(cx+4, cy, 5, 5);
-                }
-                else if (type === "K") { CTX.font = "40px Arial"; CTX.fillText("🔑", cx, cy); }
-                else if (type === "D") { CTX.fillStyle = "#e67e22"; CTX.fillRect(px+10, py+10, TILE_SIZE-20, TILE_SIZE-20); CTX.fillStyle="white"; CTX.fillText("🔒", cx, cy); }
-                else if (type === ">") { CTX.font = "40px Arial"; CTX.fillText("🏔️", cx, cy); }
+            // 2. PROCEDURAL FALLBACK 
+            if (type === ".") {
+                 CTX.fillStyle = "#2d3436"; CTX.fillRect(px, py - yOffset, TILE_SIZE, TILE_SIZE);
             }
+            else if (type === "#") { 
+                CTX.fillStyle = "#636e72"; CTX.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+                CTX.strokeStyle = "#2d3436"; CTX.lineWidth=4; CTX.strokeRect(px,py,TILE_SIZE,TILE_SIZE);
+            } 
+            else if (type === "@") { 
+                CTX.fillStyle = "#dfe6e9"; CTX.beginPath(); CTX.arc(cx, cy+5, 22, 0, Math.PI*2); CTX.fill(); 
+                CTX.fillStyle = "#ffeaa7"; CTX.beginPath(); CTX.arc(cx, cy-10, 16, 0, Math.PI*2); CTX.fill();
+                CTX.strokeStyle = "#636e72"; CTX.lineWidth = 5; CTX.lineCap = "round";
+                CTX.beginPath(); CTX.arc(cx-18, cy-10, 10, 0, Math.PI*1.5); CTX.stroke();
+                CTX.beginPath(); CTX.arc(cx+18, cy-10, 10, Math.PI*1.5, Math.PI); CTX.stroke();
+                CTX.fillStyle = "black"; CTX.fillRect(cx-6, cy-14, 4, 4); CTX.fillRect(cx+2, cy-14, 4, 4);
+                CTX.fillStyle = "#fab1a0"; CTX.fillRect(cx-3, cy-5, 6, 4);
+            } 
+            else if (type === "E" || type === "$") {
+                CTX.fillStyle = (type==="$") ? "#d63031" : "#e17055";
+                CTX.beginPath(); CTX.arc(cx, cy-5, 20, 0, Math.PI*2); CTX.fill();
+                CTX.fillStyle = "#2d3436"; CTX.beginPath(); CTX.arc(cx, cy-5, 20, Math.PI, 0); CTX.fill();
+                CTX.fillStyle = "white"; CTX.font = "bold 20px Arial"; CTX.fillText("R", cx, cy-12);
+                CTX.fillStyle = "black"; CTX.fillRect(cx-8, cy, 5, 5); CTX.fillRect(cx+4, cy, 5, 5);
+            }
+            else if (type === "K") { CTX.font = "40px Arial"; CTX.fillText("🔑", cx, cy); }
+            else if (type === "D") { CTX.fillStyle = "#e67e22"; CTX.fillRect(px+10, py+10, TILE_SIZE-20, TILE_SIZE-20); CTX.fillStyle="white"; CTX.fillText("🔒", cx, cy); }
+            else if (type === ">") { CTX.font = "40px Arial"; CTX.fillText("🏔️", cx, cy); }
         }
 
         // --- 9. INPUT & UI ---
@@ -531,7 +548,6 @@
                     }
                     else if (item.type === "E" || item.type === "H" || item.type === "$") {
                         currentEnemy = item; 
-                        // Dual Language Scaffold
                         let scaffoldText = item.quest.q + "\n\n" + "🇰🇷 " + item.quest.ko + "  |  🇨🇳 " + item.quest.zh;
                         let title = (item.type === "$") ? "BOSS BATTLE" : "BATTLE";
                         openUI(title, scaffoldText, true);
